@@ -76,16 +76,11 @@ class MusicBot(discord.Client):
         self.permissions = Permissions(perms_file, grant_all=[self.config.owner_id])
 
         self.blacklist = set(load_file(self.config.blacklist_file))
-        self.autoplaylist = load_file(self.config.auto_playlist_file)
         self.downloader = downloader.Downloader(download_folder='audio_cache')
 
         self.exit_signal = None
         self.init_ok = False
         self.cached_client_id = None
-
-        if not self.autoplaylist:
-            print("Warning: Autoplaylist is empty, disabling.")
-            self.config.auto_playlist = False
 
         # TODO: Do these properly
         ssd_defaults = {'last_np_msg': None, 'auto_paused': False}
