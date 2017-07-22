@@ -80,7 +80,6 @@ class Config:
         self.debug_mode = config.getboolean('MusicBot', 'DebugMode', fallback=ConfigDefaults.debug_mode)
 
         self.blacklist_file = config.get('Files', 'BlacklistFile', fallback=ConfigDefaults.blacklist_file)
-        self.auto_playlist_file = config.get('Files', 'AutoPlaylistFile', fallback=ConfigDefaults.auto_playlist_file)
 
         self.run_checks()
 
@@ -146,7 +145,7 @@ class Config:
                 "Please put your osu! install directory in the config.",
                 preface=confpreface)
 
-        elif not os.path.exists(self.osu_dir+'Songs'):
+        elif not os.path.exists(os.path.join(self.osu_dir, 'Songs')):
             raise HelpfulError(
                 "osu! dir specified in config is not a valid folder!",
 
@@ -204,7 +203,6 @@ class ConfigDefaults:
 
     options_file = 'config/options.ini'
     blacklist_file = 'config/blacklist.txt'
-    auto_playlist_file = 'config/autoplaylist.txt' # this will change when I add playlists
 
 # These two are going to be wrappers for the id lists, with add/remove/load/save functions
 # and id/object conversion so types aren't an issue

@@ -2,10 +2,32 @@ import re
 import aiohttp
 import decimal
 import unicodedata
+import os
+import glob
 
 from hashlib import md5
 from .constants import DISCORD_MSG_CHAR_LIMIT
 
+
+def song_list(osudir):
+    osus = []
+    songs = []
+    for song in os.listdir(osudir+'\Songs'):
+        print('Progressing '+ song)
+        for osu in glob.glob(osudir+'\Songs\\'+song+'\*.osu'):
+            try:
+                with open(osu, encoding='utf8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and line.startswith('AudioFilename: '):
+                            file = osudir+'\Songs\\'+song+'\\'+line[15:len(line)]
+                            if not file in songs:
+                                osus.append(osu)
+                            songs.append(file)
+                            break
+            except IOError as e:
+                print("Error loading", song, e)
+    return osus
 
 def load_file(filename, skip_commented_lines=True, comment_char='#'):
     try:

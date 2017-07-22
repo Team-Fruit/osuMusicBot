@@ -31,59 +31,6 @@ class Playlist(EventEmitter):
     def clear(self):
         self.entries.clear()
 
-    async def add_entry(self, song_url, **meta):
-        """
-            Validates and adds a song_url to be played. This does not start the download of the song.
-
-            Returns the entry & the position it is in the queue.
-
-            :param song_url: The song url to add to the playlist.
-            :param meta: Any additional metadata to add to the playlist entry.
-        """
-
-        try:
-            info = await self.downloader.extract_info(self.loop, song_url, download=False)
-        except Exception as e:
-            raise ExtractionError('Could not extract information from {}\n\n{}'.format(song_url, e))
-
-        if not info:
-            raise ExtractionError('Could not extract information from %s' % song_url)
-
-        # TODO: Sort out what happens next when this happens
-        if info.get('_type', None) == 'playlist':
-            raise WrongEntryTypeError("This is a playlist.", True, info.get('webpage_url', None) or info.get('url', None))
-
-        if info['extractor'] in ['generic', 'Dropbox']:
-            try:
-                # unfortunately this is literally broken
-                # https://github.com/KeepSafe/aiohttp/issues/758
-                # https://github.com/KeepSafe/aiohttp/issues/852
-                content_type = await get_header(self.bot.aiosession, info['url'], 'CONTENT-TYPE')
-                print("Got content type", content_type)
-
-            except Exception as e:
-                print("[Warning] Failed to get content type for url %s (%s)" % (song_url, e))
-                content_type = None
-
-            if content_type:
-                if content_type.startswith(('application/', 'image/')):
-                    if '/ogg' not in content_type:  # How does a server say `application/ogg` what the actual fuck
-                        raise ExtractionError("Invalid content type \"%s\" for url %s" % (content_type, song_url))
-
-                elif not content_type.startswith(('audio/', 'video/')):
-                    print("[Warning] Questionable content type \"%s\" for url %s" % (content_type, song_url))
-
-        entry = URLPlaylistEntry(
-            self,
-            song_url,
-            info.get('title', 'Untitled'),
-            info.get('duration', 0) or 0,
-            self.downloader.ytdl.prepare_filename(info),
-            **meta
-        )
-        self._add_entry(entry)
-        return entry, len(self.entries)
-
     async def import_from(self, playlist_url, **meta):
         """
             Imports the songs from `playlist_url` and queues them to be played.
@@ -123,7 +70,7 @@ class Playlist(EventEmitter):
                         **meta
                     )
 
-                    self._add_entry(entry)
+                    self.add_entry(entry)
                     entry_list.append(entry)
                 except:
                     baditems += 1
@@ -218,7 +165,7 @@ class Playlist(EventEmitter):
 
         return gooditems
 
-    def _add_entry(self, entry):
+    async def add_entry(self, entry):
         self.entries.append(entry)
         self.emit('entry-added', playlist=self, entry=entry)
 

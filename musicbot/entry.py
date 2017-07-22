@@ -229,9 +229,30 @@ class URLPlaylistEntry(BasePlaylistEntry):
             if os.path.isfile(self.filename):
                 # Oh bother it was actually there.
                 os.unlink(unhashed_fname)
-            else:
                 # Move the temporary file to it's final location.
                 os.rename(unhashed_fname, self.filename)
 
+class OsuPlaylistEntry(BasePlaylistEntry):
+    def __init__(self, osu, **meta):
+        self.meta = meta
 
+        song_path = os.path.dirname(osu)
+        try:
+            with open(osu, encoding='utf8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        if line.startswith('AudioFilename: '):
+                            self.filename = song_path + '\\' + line[15:len(line)]
+                        elif line.startswith('PreviewTime: '):
+                            self.duration = int(line[13:len(line)])
+                        elif line.startswith('Title:'):
+                            self.title = line[6:len(line)]
+                        elif line == '[Difficulty]':
+                            break;
+        except IOError as e:
+            print("Error loading", song_path, e)
+
+    def is_downloaded(self):
+        return True
 
