@@ -67,6 +67,7 @@ class Config:
         self.bound_channels = config.get('Chat', 'BindToChannels', fallback=ConfigDefaults.bound_channels)
         self.autojoin_channels =  config.get('Chat', 'AutojoinChannels', fallback=ConfigDefaults.autojoin_channels)
 
+        self.osu_dir = config.get('MusicBot', 'osu!Directory', fallback=ConfigDefaults.osu_dir)
         self.default_volume = config.getfloat('MusicBot', 'DefaultVolume', fallback=ConfigDefaults.default_volume)
         self.skips_required = config.getint('MusicBot', 'SkipsRequired', fallback=ConfigDefaults.skips_required)
         self.skip_ratio_required = config.getfloat('MusicBot', 'SkipRatio', fallback=ConfigDefaults.skip_ratio_required)
@@ -139,6 +140,20 @@ class Config:
                 "use the %sid command.  Current invalid OwnerID: %s" % (self.command_prefix, self.owner_id),
                 preface=confpreface)
 
+        if not self.osu_dir:
+            raise HelpfulError(
+                "The osu dir was not specified in the config.",
+
+                "Please put your osu! install directory in the config.",
+                preface=confpreface)
+
+        elif not os.path.exists(self.osu_dir+'Songs'):
+            raise HelpfulError(
+                "osu! dir specified in config is not a valid folder!",
+
+                "Please specify the correct osu! Directory as config.",
+                preface=confpreface)
+
         if self.bound_channels:
             try:
                 self.bound_channels = set(x for x in self.bound_channels.split() if x)
@@ -175,6 +190,7 @@ class ConfigDefaults:
     command_prefix = '!'
     bound_channels = set()
     autojoin_channels = set()
+    osu_dir = os.getenv('LOCALAPPDATA')+'osu!'
 
     default_volume = 0.15
     skips_required = 4
