@@ -5,6 +5,7 @@ import traceback
 
 from .exceptions import ExtractionError
 from .utils import get_header, md5sum
+from mutagen.mp3 import MP3
 
 
 class BasePlaylistEntry:
@@ -244,8 +245,7 @@ class OsuPlaylistEntry(BasePlaylistEntry):
                     if line:
                         if line.startswith('AudioFilename: '):
                             self.filename = song_path + '\\' + line[15:len(line)]
-                        elif line.startswith('PreviewTime: '):
-                            self.duration = int(line[13:len(line)])
+                            self.duration = int(MP3(self.filename).info.length)
                         elif line.startswith('Title:'):
                             self.title = line[6:len(line)]
                         elif line == '[Difficulty]':

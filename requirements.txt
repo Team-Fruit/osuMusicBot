@@ -1,4 +1,5 @@
 discord.py[voice] ~= 0.12.0
 youtube_dl
+mutagen
 pip
 cffi==1.6.0; sys_platform == 'win32'
