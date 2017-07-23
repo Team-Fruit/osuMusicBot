@@ -160,6 +160,7 @@ class MusicPlayer(EventEmitter):
         self.playlist.clear()
         self._events.clear()
         self._kill_current_player()
+        print('killed')
 
     def _playback_finished(self):
         entry = self._current_entry

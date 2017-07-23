@@ -62,6 +62,9 @@ class Config:
 
         self.auth = None
 
+        self.osu_id = config.get('Credentials', 'osu!Id', fallback=ConfigDefaults.osu_id)
+        self.osu_password = config.get('Credentials', 'osu!Password', fallback=ConfigDefaults.osu_password)
+
         self.owner_id = config.get('Permissions', 'OwnerID', fallback=ConfigDefaults.owner_id)
         self.command_prefix = config.get('Chat', 'CommandPrefix', fallback=ConfigDefaults.command_prefix)
         self.bound_channels = config.get('Chat', 'BindToChannels', fallback=ConfigDefaults.bound_channels)
@@ -119,6 +122,20 @@ class Config:
 
         else:
             self.auth = (self._login_token,)
+
+        if not self.osu_id:
+            raise HelpfulError(
+                "The osu! id was not specified in the config.",
+
+                "Please put your bot account credentials in the config.",
+                preface=confpreface)
+
+        if not self.osu_password:
+            raise HelpfulError(
+                "The osu! password was not specified in the config.",
+
+                "Please put your bot account credentials in the config.",
+                preface=confpreface)
 
         if self.owner_id and self.owner_id.isdigit():
             if int(self.owner_id) < 10000:
@@ -183,6 +200,9 @@ class ConfigDefaults:
     email = None    #
     password = None # This is not where you put your login info, go away.
     token = None    #
+
+    osu_id = None
+    osu_password = None
 
     owner_id = None
     command_prefix = '!'

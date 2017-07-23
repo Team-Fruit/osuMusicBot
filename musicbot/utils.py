@@ -21,7 +21,7 @@ def song_list(osudir):
                         line = line.strip()
                         if line and line.startswith('AudioFilename: '):
                             file = osudir+'\Songs\\'+song+'\\'+line[15:len(line)]
-                            if not file in songs:
+                            if file not in songs:
                                 osus.append(osu)
                             songs.append(file)
                             break

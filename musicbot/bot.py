@@ -8,6 +8,8 @@ import aiohttp
 import discord
 import asyncio
 import traceback
+import zipfile
+import glob
 
 from discord import utils
 from discord.object import Object
@@ -21,13 +23,14 @@ from textwrap import dedent
 from datetime import timedelta
 from random import choice, shuffle
 from collections import defaultdict
+from requests import session
 
 from musicbot.playlist import Playlist
 from musicbot.player import MusicPlayer
 from musicbot.config import Config, ConfigDefaults
 from musicbot.permissions import Permissions, PermissionsDefaults
 from musicbot.utils import load_file, write_file, sane_round_int, song_list
-from musicbot.entry import OsuPlaylistEntry
+from musicbot.entry import LocalOsuPlaylistEntry, OsuPlaylistEntry
 
 from . import exceptions
 from . import downloader
@@ -403,7 +406,7 @@ class MusicBot(discord.Client):
 
                 # TODO: better checks here
                 try:
-                    await player.playlist.add_entry(OsuPlaylistEntry(song_path))
+                    await player.playlist.add_entry(LocalOsuPlaylistEntry(song_path))
                 except exceptions.ExtractionError as e:
                     print("Error adding song from autoplaylist:", e)
                     continue
@@ -809,7 +812,32 @@ class MusicBot(discord.Client):
             raise exceptions.CommandError('Invalid URL provided:\n{}\n'.format(server_link), expire_in=30)
 
     async def cmd_play(self, player, channel, author, permissions, leftover_args, song_url):
-        pass
+        if (song_url.startswith('http://') or song_url.startswith('https://')) and not song_url.startswith('https://osu.ppy.sh/'):
+            return Response('Only URL osu.ppy.sh is available.')
+        id = song_url[21:len(song_url)]
+        songs = list(filter((lambda item: item.startswith(id)), os.listdir(os.path.join(self.config.osu_dir, 'Songs'))))
+        if os.path.exists(os.path.join(AUDIO_CACHE_PATH, id)):
+            songs.append(os.path.join(AUDIO_CACHE_PATH, id))
+        songs_added = 1
+        if len(songs) == 0:
+            await player.playlist.add_entry(OsuPlaylistEntry(player.playlist, id, self.config,  channel=channel, author=author))
+        else:
+            songs_added = 0
+            added = []
+            for beatmap in songs:
+                for osu in glob.glob(self.config.osu_dir+'\Songs\\'+beatmap+'\*.osu'):
+                    with open(osu, encoding='utf8') as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and line.startswith('AudioFilename: '):
+                                audio = line[15:len(line)]
+                                if audio not in added:
+                                    added.append(audio)
+                                    songs_added = songs_added+1
+                                    await player.playlist.add_entry(LocalOsuPlaylistEntry(osu, channel=channel, author=author))
+                                break
+
+        return Response("Enqueued {} songs".format(songs_added))
 
     async def cmd_search(self, player, channel, author, permissions, leftover_args):
         pass

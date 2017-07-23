@@ -83,3 +83,5 @@ class Downloader:
 
     async def safe_extract_info(self, loop, *args, **kwargs):
         return await loop.run_in_executor(self.thread_pool, functools.partial(self.safe_ytdl.extract_info, *args, **kwargs))
+
+

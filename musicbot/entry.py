@@ -2,10 +2,16 @@ import asyncio
 import json
 import os
 import traceback
+import zipfile
+import glob
+import config
+import functools
 
 from .exceptions import ExtractionError
 from .utils import get_header, md5sum
 from mutagen.mp3 import MP3
+from requests import session
+from .constants import AUDIO_CACHE_PATH
 
 
 class BasePlaylistEntry:
@@ -233,10 +239,11 @@ class URLPlaylistEntry(BasePlaylistEntry):
                 # Move the temporary file to it's final location.
                 os.rename(unhashed_fname, self.filename)
 
-class OsuPlaylistEntry(BasePlaylistEntry):
+class LocalOsuPlaylistEntry(BasePlaylistEntry):
     def __init__(self, osu, **meta):
-        self.meta = meta
+        super().__init__()
 
+        self.meta = meta
         song_path = os.path.dirname(osu)
         try:
             with open(osu, encoding='utf8') as f:
@@ -245,7 +252,10 @@ class OsuPlaylistEntry(BasePlaylistEntry):
                     if line:
                         if line.startswith('AudioFilename: '):
                             self.filename = song_path + '\\' + line[15:len(line)]
-                            self.duration = int(MP3(self.filename).info.length)
+                            try:
+                                self.duration = int(MP3(self.filename).info.length)
+                            except Exception as e:
+                                self.duration = 0
                         elif line.startswith('Title:'):
                             self.title = line[6:len(line)]
                         elif line == '[Difficulty]':
@@ -255,4 +265,67 @@ class OsuPlaylistEntry(BasePlaylistEntry):
 
     def is_downloaded(self):
         return True
+
+class OsuPlaylistEntry(BasePlaylistEntry):
+    def __init__(self, playlist, id, config, **meta):
+        super().__init__()
+
+        self.playlist = playlist
+        self.id = id
+        self.url = 'https://osu.ppy.sh/d/'+id
+        self.config = config
+        self.duration = 0
+        self.meta = meta
+
+    async def _download(self):
+        if self._is_downloading:
+            return
+
+        self._is_downloading = True
+
+        self.playlist.loop.run_in_executor(self.playlist.downloader.thread_pool, functools.partial(self._really_download))
+
+        self._is_downloading = False
+
+
+    def _really_download(self):
+        print("[Download] Started:", self.url)
+        try:
+            if not os.path.exists(os.path.join(AUDIO_CACHE_PATH, 'osz')):
+                os.makedirs(os.path.join(AUDIO_CACHE_PATH, 'osz'))
+
+            with session() as s:
+                para = {
+                    'action': 'login',
+                    'username': self.config.osu_id,
+                    'password': self.config.osu_password,
+                    'redirect': 'index.php',
+                    'sid': '',
+                    'login': 'Login'
+                }
+                r = s.post('http://osu.ppy.sh/forum/ucp.php', data=para)
+                req = s.get('https://osu.ppy.sh/d/' + self.id, stream=True)
+                path = os.path.join(AUDIO_CACHE_PATH, 'osz', self.id + '.osz')
+                with open(path, 'wb') as f:
+                    for chunk in req.iter_content(chunk_size=512 * 1024):
+                        if chunk:
+                            f.write(chunk)
+                            f.flush()
+                    f.close()
+                zfile = zipfile.ZipFile(path)
+                unzip = os.path.join(AUDIO_CACHE_PATH, self.id)
+                zfile.extractall(unzip)
+                for osu in glob.glob(unzip + '\*.osu'):
+                    with open(osu, encoding='utf8') as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and line.startswith('AudioFilename: '):
+                                self.filename = os.path.join(unzip, line[15:len(line)])
+                                break
+        except Exception as e:
+            raise ExtractionError(e)
+        print("[Download] Complete:", self.url)
+
+    def test():
+        print('Hi')
 
