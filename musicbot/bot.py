@@ -860,10 +860,10 @@ class MusicBot(discord.Client):
             prog_str = '`[%s/%s]`' % (song_progress, song_total)
 
             if player.current_entry.meta.get('channel', False) and player.current_entry.meta.get('author', False):
-                np_text = "Now Playing: **%s** added by **%s** %s\n" % (
-                    player.current_entry.title, player.current_entry.meta['author'].name, prog_str)
+                np_text = "Now Playing: **%s** added by **%s** %s\nURL: %s\n" % (
+                    player.current_entry.title, player.current_entry.meta['author'].name, prog_str, player.current_entry.ur)
             else:
-                np_text = "Now Playing: **%s** %s\n" % (player.current_entry.title, prog_str)
+                np_text = "Now Playing: **%s** %s\nURL: %s\n" % (player.current_entry.title, prog_str, player.current_entry.url)
 
             self.server_specific_data[server]['last_np_msg'] = await self.safe_send_message(channel, np_text)
             await self._manual_delete_check(message)

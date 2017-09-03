@@ -245,6 +245,9 @@ class LocalOsuPlaylistEntry(BasePlaylistEntry):
 
         self.meta = meta
         song_path = os.path.dirname(osu)
+        print(os.path.dirname(osu), os.pardir)
+        self.id = int(os.path.basename(song_path).split(' ')[0])
+        self.url = 'https://osu.ppy.sh/s/'+str(self.id)
         try:
             with open(osu, encoding='utf8') as f:
                 for line in f:
@@ -272,7 +275,7 @@ class OsuPlaylistEntry(BasePlaylistEntry):
 
         self.playlist = playlist
         self.id = id
-        self.url = 'https://osu.ppy.sh/d/'+id
+        self.url = 'https://osu.ppy.sh/s/'+id
         self.config = config
         self.duration = 0
         self.meta = meta

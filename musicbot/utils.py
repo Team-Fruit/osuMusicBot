@@ -4,7 +4,6 @@ import decimal
 import unicodedata
 import os
 import glob
-import fnmatch
 
 from hashlib import md5
 from .constants import DISCORD_MSG_CHAR_LIMIT
